@@ -1,0 +1,211 @@
+e0527277@stu2:~/cs3223_assign1$ ./part2.sh
+ 64MB
+dropping old tables...
+creating tables...
+generating data (client-side)...
+400000 of 400000 tuples (100%) done (elapsed 0.83 s, remaining 0.00 s)
+vacuuming...
+creating primary keys...
+done in 3.54 s (drop tables 0.72 s, create tables 0.38 s, client-side generate 1.13 s, vacuum 0.56 s, primary keys 0.74 s).
+ pg_stat_reset 
+---------------
+ 
+(1 row)
+
+pgbench: warning: scale option ignored, using count from pgbench_branches table (4)
+starting vacuum...end.
+ shared_buffers 
+----------------
+ 64MB
+(1 row)
+
+
+Wed 22 Feb 2023 03:06:21 PM +08
+
+pgbench (15.0)
+transaction type: <builtin: TPC-B (sort of)>
+scaling factor: 4
+query mode: simple
+number of clients: 10
+number of threads: 10
+maximum number of tries: 1
+duration: 360 s
+number of transactions actually processed: 213012
+number of failed transactions: 0 (0.000%)
+latency average = 16.895 ms
+initial connection time = 122.171 ms
+tps = 591.874504 (without initial connection time)
+
+Wed 22 Feb 2023 03:12:22 PM +08
+
+ heap_read | heap_hit |       hit_ratio        
+-----------+----------+------------------------
+     10531 |  4175282 | 0.99748412076698122921
+(1 row)
+
+e0527277@stu2:~/cs3223_assign1$ pg_ctl stop
+waiting for server to shut down.... done
+server stopped
+e0527277@stu2:~/cs3223_assign1$ pg_ctl start -l log.txt -o "-p 8112 -B 8192"
+waiting for server to start.... done
+server started
+e0527277@stu2:~/cs3223_assign1$ export PGPORT=8112
+e0527277@stu2:~/cs3223_assign1$ ./part2.sh
+ 64MB
+dropping old tables...
+creating tables...
+generating data (client-side)...
+400000 of 400000 tuples (100%) done (elapsed 0.39 s, remaining 0.00 s)
+vacuuming...
+creating primary keys...
+done in 5.72 s (drop tables 0.50 s, create tables 0.17 s, client-side generate 2.56 s, vacuum 1.57 s, primary keys 0.91 s).
+ pg_stat_reset 
+---------------
+ 
+(1 row)
+
+pgbench: warning: scale option ignored, using count from pgbench_branches table (4)
+starting vacuum...end.
+ shared_buffers 
+----------------
+ 64MB
+(1 row)
+
+
+Wed 22 Feb 2023 03:12:46 PM +08
+
+pgbench (15.0)
+transaction type: <builtin: TPC-B (sort of)>
+scaling factor: 4
+query mode: simple
+number of clients: 10
+number of threads: 10
+maximum number of tries: 1
+duration: 360 s
+number of transactions actually processed: 472481
+number of failed transactions: 0 (0.000%)
+latency average = 7.619 ms
+initial connection time = 35.963 ms
+tps = 1312.505053 (without initial connection time)
+
+Wed 22 Feb 2023 03:18:46 PM +08
+
+ heap_read | heap_hit |       hit_ratio        
+-----------+----------+------------------------
+     22466 |  9186362 | 0.99756038444848790747
+(1 row)
+
+e0527277@stu2:~/cs3223_assign1$ pg_ctl stop
+waiting for server to shut down.... done
+server stopped
+e0527277@stu2:~/cs3223_assign1$ pg_ctl start -l log.txt -o "-p 8112 -B 8192"
+waiting for server to start.... done
+server started
+e0527277@stu2:~/cs3223_assign1$ export PGPORT=8112
+e0527277@stu2:~/cs3223_assign1$ ./part2.sh
+ 64MB
+dropping old tables...
+creating tables...
+generating data (client-side)...
+400000 of 400000 tuples (100%) done (elapsed 0.43 s, remaining 0.00 s)
+vacuuming...
+creating primary keys...
+done in 2.46 s (drop tables 0.30 s, create tables 0.17 s, client-side generate 0.63 s, vacuum 0.60 s, primary keys 0.76 s).
+ pg_stat_reset 
+---------------
+ 
+(1 row)
+
+pgbench: warning: scale option ignored, using count from pgbench_branches table (4)
+starting vacuum...end.
+pgbench: error: client 2 script 0 aborted in command 5 query 0: ERROR:  no unpinned buffers available
+LINE 1: UPDATE pgbench_accounts SET abalance = abalance + -496 WHERE...
+               ^
+pgbench: error: client 3 script 0 aborted in command 6 query 0: ERROR:  no unpinned buffers available
+LINE 1: SELECT abalance FROM pgbench_accounts WHERE aid = 181216;
+                             ^
+pgbench: error: Run was aborted; the above results are incomplete.
+ shared_buffers 
+----------------
+ 64MB
+(1 row)
+
+
+Wed 22 Feb 2023 03:19:08 PM +08
+
+pgbench (15.0)
+transaction type: <builtin: TPC-B (sort of)>
+scaling factor: 4
+query mode: simple
+number of clients: 10
+number of threads: 10
+maximum number of tries: 1
+duration: 360 s
+number of transactions actually processed: 478542
+number of failed transactions: 0 (0.000%)
+latency average = 7.522 ms
+initial connection time = 29.866 ms
+tps = 1329.351101 (without initial connection time)
+
+Wed 22 Feb 2023 03:25:08 PM +08
+
+ heap_read | heap_hit |       hit_ratio        
+-----------+----------+------------------------
+     22403 |  8869334 | 0.99748046978897374045
+(1 row)
+
+e0527277@stu2:~/cs3223_assign1$ pg_ctl stop
+waiting for server to shut down.... done
+server stopped
+e0527277@stu2:~/cs3223_assign1$ pg_ctl start -l log.txt -o "-p 8112 -B 8192"
+waiting for server to start.... done
+server started
+e0527277@stu2:~/cs3223_assign1$ export PGPORT=8112
+e0527277@stu2:~/cs3223_assign1$ ./part2.sh
+ 64MB
+dropping old tables...
+creating tables...
+generating data (client-side)...
+400000 of 400000 tuples (100%) done (elapsed 22.46 s, remaining 0.00 s)
+vacuuming...
+creating primary keys...
+done in 56.52 s (drop tables 0.40 s, create tables 1.38 s, client-side generate 25.38 s, vacuum 16.21 s, primary keys 13.16 s).
+ pg_stat_reset 
+---------------
+ 
+(1 row)
+
+pgbench: warning: scale option ignored, using count from pgbench_branches table (4)
+starting vacuum...end.
+ shared_buffers 
+----------------
+ 64MB
+(1 row)
+
+
+Wed 22 Feb 2023 03:27:40 PM +08
+
+pgbench (15.0)
+transaction type: <builtin: TPC-B (sort of)>
+scaling factor: 4
+query mode: simple
+number of clients: 10
+number of threads: 10
+maximum number of tries: 1
+duration: 360 s
+number of transactions actually processed: 88357
+number of failed transactions: 0 (0.000%)
+latency average = 40.539 ms
+initial connection time = 1822.386 ms
+tps = 246.673212 (without initial connection time)
+
+Wed 22 Feb 2023 03:33:42 PM +08
+
+ heap_read | heap_hit |       hit_ratio        
+-----------+----------+------------------------
+      6759 |  1587638 | 0.99576077978069451962
+(1 row)
+
+e0527277@stu2:~/cs3223_assign1$ pg_ctl stop
+waiting for server to shut down.... done
+server stopped

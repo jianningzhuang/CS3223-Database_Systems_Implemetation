@@ -1,0 +1,475 @@
+ dropdbbuffers 
+---------------
+ t
+(1 row)
+
+ pg_stat_reset 
+---------------
+ 
+(1 row)
+
+BEGIN;
+BEGIN
+SHOW enable_bitmapscan;
+ enable_bitmapscan 
+-------------------
+ on
+(1 row)
+
+SHOW enable_indexscan;
+ enable_indexscan 
+------------------
+ on
+(1 row)
+
+SHOW enable_indexonlyscan;
+ enable_indexonlyscan 
+----------------------
+ on
+(1 row)
+
+SHOW enable_seqscan;
+ enable_seqscan 
+----------------
+ on
+(1 row)
+
+SET enable_bitmapscan = ON;
+SET
+SET enable_indexscan = ON;
+SET
+SET enable_indexonlyscan = OFF;
+SET
+SET enable_seqscan = ON;
+SET
+SHOW enable_bitmapscan;
+ enable_bitmapscan 
+-------------------
+ on
+(1 row)
+
+SHOW enable_indexscan;
+ enable_indexscan 
+------------------
+ on
+(1 row)
+
+SHOW enable_indexonlyscan;
+ enable_indexonlyscan 
+----------------------
+ off
+(1 row)
+
+SHOW enable_seqscan;
+ enable_seqscan 
+----------------
+ on
+(1 row)
+
+EXPLAIN ANALYZE  SELECT b FROM r WHERE c>15;
+                                                         QUERY PLAN                                                          
+-----------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on r  (cost=4474.19..24195.94 rows=401260 width=8) (actual time=24.597..270.277 rows=400000 loops=1)
+   Recheck Cond: (c > 15)
+   Heap Blocks: exact=14706
+   ->  Bitmap Index Scan on c_idx  (cost=0.00..4373.88 rows=401260 width=0) (actual time=21.218..21.218 rows=400000 loops=1)
+         Index Cond: (c > 15)
+ Planning Time: 19.951 ms
+ Execution Time: 284.276 ms
+(7 rows)
+
+ROLLBACK;
+ROLLBACK
+ relname | heap_blks_read | heap_blks_hit | seq_scan | seq_tup_read 
+---------+----------------+---------------+----------+--------------
+ r       |          14706 |             0 |        0 |            0
+(1 row)
+
+ relname | indexrelname | idx_blks_read | idx_blks_hit | idx_scan | idx_tup_read | idx_tup_fetch 
+---------+--------------+---------------+--------------+----------+--------------+---------------
+ r       | r_pkey       |             1 |            0 |        0 |            0 |             0
+ r       | b_idx        |             1 |            0 |        0 |            0 |             0
+ r       | c_idx        |           341 |            0 |        1 |       400000 |             0
+ r       | cb_idx       |             1 |            0 |        0 |            0 |             0
+(4 rows)
+
+ dropdbbuffers 
+---------------
+ t
+(1 row)
+
+ pg_stat_reset 
+---------------
+ 
+(1 row)
+
+BEGIN;
+BEGIN
+SHOW enable_bitmapscan;
+ enable_bitmapscan 
+-------------------
+ on
+(1 row)
+
+SHOW enable_indexscan;
+ enable_indexscan 
+------------------
+ on
+(1 row)
+
+SHOW enable_indexonlyscan;
+ enable_indexonlyscan 
+----------------------
+ on
+(1 row)
+
+SHOW enable_seqscan;
+ enable_seqscan 
+----------------
+ on
+(1 row)
+
+SET enable_bitmapscan = ON;
+SET
+SET enable_indexscan = ON;
+SET
+SET enable_indexonlyscan = OFF;
+SET
+SET enable_seqscan = ON;
+SET
+SHOW enable_bitmapscan;
+ enable_bitmapscan 
+-------------------
+ on
+(1 row)
+
+SHOW enable_indexscan;
+ enable_indexscan 
+------------------
+ on
+(1 row)
+
+SHOW enable_indexonlyscan;
+ enable_indexonlyscan 
+----------------------
+ off
+(1 row)
+
+SHOW enable_seqscan;
+ enable_seqscan 
+----------------
+ on
+(1 row)
+
+EXPLAIN ANALYZE  SELECT b FROM r WHERE c>15;
+                                                         QUERY PLAN                                                          
+-----------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on r  (cost=4474.19..24195.94 rows=401260 width=8) (actual time=42.466..260.075 rows=400000 loops=1)
+   Recheck Cond: (c > 15)
+   Heap Blocks: exact=14706
+   ->  Bitmap Index Scan on c_idx  (cost=0.00..4373.88 rows=401260 width=0) (actual time=36.308..36.310 rows=400000 loops=1)
+         Index Cond: (c > 15)
+ Planning Time: 11.984 ms
+ Execution Time: 274.962 ms
+(7 rows)
+
+ROLLBACK;
+ROLLBACK
+ relname | heap_blks_read | heap_blks_hit | seq_scan | seq_tup_read 
+---------+----------------+---------------+----------+--------------
+ r       |          14706 |             0 |        0 |            0
+(1 row)
+
+ relname | indexrelname | idx_blks_read | idx_blks_hit | idx_scan | idx_tup_read | idx_tup_fetch 
+---------+--------------+---------------+--------------+----------+--------------+---------------
+ r       | r_pkey       |             1 |            0 |        0 |            0 |             0
+ r       | b_idx        |             1 |            0 |        0 |            0 |             0
+ r       | c_idx        |           341 |            0 |        1 |       400000 |             0
+ r       | cb_idx       |             1 |            0 |        0 |            0 |             0
+(4 rows)
+
+ dropdbbuffers 
+---------------
+ t
+(1 row)
+
+ pg_stat_reset 
+---------------
+ 
+(1 row)
+
+BEGIN;
+BEGIN
+SHOW enable_bitmapscan;
+ enable_bitmapscan 
+-------------------
+ on
+(1 row)
+
+SHOW enable_indexscan;
+ enable_indexscan 
+------------------
+ on
+(1 row)
+
+SHOW enable_indexonlyscan;
+ enable_indexonlyscan 
+----------------------
+ on
+(1 row)
+
+SHOW enable_seqscan;
+ enable_seqscan 
+----------------
+ on
+(1 row)
+
+SET enable_bitmapscan = ON;
+SET
+SET enable_indexscan = ON;
+SET
+SET enable_indexonlyscan = OFF;
+SET
+SET enable_seqscan = ON;
+SET
+SHOW enable_bitmapscan;
+ enable_bitmapscan 
+-------------------
+ on
+(1 row)
+
+SHOW enable_indexscan;
+ enable_indexscan 
+------------------
+ on
+(1 row)
+
+SHOW enable_indexonlyscan;
+ enable_indexonlyscan 
+----------------------
+ off
+(1 row)
+
+SHOW enable_seqscan;
+ enable_seqscan 
+----------------
+ on
+(1 row)
+
+EXPLAIN ANALYZE  SELECT b FROM r WHERE c>15;
+                                                         QUERY PLAN                                                          
+-----------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on r  (cost=4474.19..24195.94 rows=401260 width=8) (actual time=39.506..527.464 rows=400000 loops=1)
+   Recheck Cond: (c > 15)
+   Heap Blocks: exact=14706
+   ->  Bitmap Index Scan on c_idx  (cost=0.00..4373.88 rows=401260 width=0) (actual time=30.694..30.695 rows=400000 loops=1)
+         Index Cond: (c > 15)
+ Planning Time: 14.238 ms
+ Execution Time: 544.108 ms
+(7 rows)
+
+ROLLBACK;
+ROLLBACK
+ relname | heap_blks_read | heap_blks_hit | seq_scan | seq_tup_read 
+---------+----------------+---------------+----------+--------------
+ r       |          14706 |             0 |        0 |            0
+(1 row)
+
+ relname | indexrelname | idx_blks_read | idx_blks_hit | idx_scan | idx_tup_read | idx_tup_fetch 
+---------+--------------+---------------+--------------+----------+--------------+---------------
+ r       | r_pkey       |             1 |            0 |        0 |            0 |             0
+ r       | b_idx        |             1 |            0 |        0 |            0 |             0
+ r       | c_idx        |           341 |            0 |        1 |       400000 |             0
+ r       | cb_idx       |             1 |            0 |        0 |            0 |             0
+(4 rows)
+
+ dropdbbuffers 
+---------------
+ t
+(1 row)
+
+ pg_stat_reset 
+---------------
+ 
+(1 row)
+
+BEGIN;
+BEGIN
+SHOW enable_bitmapscan;
+ enable_bitmapscan 
+-------------------
+ on
+(1 row)
+
+SHOW enable_indexscan;
+ enable_indexscan 
+------------------
+ on
+(1 row)
+
+SHOW enable_indexonlyscan;
+ enable_indexonlyscan 
+----------------------
+ on
+(1 row)
+
+SHOW enable_seqscan;
+ enable_seqscan 
+----------------
+ on
+(1 row)
+
+SET enable_bitmapscan = ON;
+SET
+SET enable_indexscan = ON;
+SET
+SET enable_indexonlyscan = OFF;
+SET
+SET enable_seqscan = ON;
+SET
+SHOW enable_bitmapscan;
+ enable_bitmapscan 
+-------------------
+ on
+(1 row)
+
+SHOW enable_indexscan;
+ enable_indexscan 
+------------------
+ on
+(1 row)
+
+SHOW enable_indexonlyscan;
+ enable_indexonlyscan 
+----------------------
+ off
+(1 row)
+
+SHOW enable_seqscan;
+ enable_seqscan 
+----------------
+ on
+(1 row)
+
+EXPLAIN ANALYZE  SELECT b FROM r WHERE c>15;
+                                                         QUERY PLAN                                                          
+-----------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on r  (cost=4474.19..24195.94 rows=401260 width=8) (actual time=24.002..229.748 rows=400000 loops=1)
+   Recheck Cond: (c > 15)
+   Heap Blocks: exact=14706
+   ->  Bitmap Index Scan on c_idx  (cost=0.00..4373.88 rows=401260 width=0) (actual time=21.161..21.163 rows=400000 loops=1)
+         Index Cond: (c > 15)
+ Planning Time: 13.965 ms
+ Execution Time: 245.117 ms
+(7 rows)
+
+ROLLBACK;
+ROLLBACK
+ relname | heap_blks_read | heap_blks_hit | seq_scan | seq_tup_read 
+---------+----------------+---------------+----------+--------------
+ r       |          14706 |             0 |        0 |            0
+(1 row)
+
+ relname | indexrelname | idx_blks_read | idx_blks_hit | idx_scan | idx_tup_read | idx_tup_fetch 
+---------+--------------+---------------+--------------+----------+--------------+---------------
+ r       | r_pkey       |             1 |            0 |        0 |            0 |             0
+ r       | b_idx        |             1 |            0 |        0 |            0 |             0
+ r       | c_idx        |           341 |            0 |        1 |       400000 |             0
+ r       | cb_idx       |             1 |            0 |        0 |            0 |             0
+(4 rows)
+
+ dropdbbuffers 
+---------------
+ t
+(1 row)
+
+ pg_stat_reset 
+---------------
+ 
+(1 row)
+
+BEGIN;
+BEGIN
+SHOW enable_bitmapscan;
+ enable_bitmapscan 
+-------------------
+ on
+(1 row)
+
+SHOW enable_indexscan;
+ enable_indexscan 
+------------------
+ on
+(1 row)
+
+SHOW enable_indexonlyscan;
+ enable_indexonlyscan 
+----------------------
+ on
+(1 row)
+
+SHOW enable_seqscan;
+ enable_seqscan 
+----------------
+ on
+(1 row)
+
+SET enable_bitmapscan = ON;
+SET
+SET enable_indexscan = ON;
+SET
+SET enable_indexonlyscan = OFF;
+SET
+SET enable_seqscan = ON;
+SET
+SHOW enable_bitmapscan;
+ enable_bitmapscan 
+-------------------
+ on
+(1 row)
+
+SHOW enable_indexscan;
+ enable_indexscan 
+------------------
+ on
+(1 row)
+
+SHOW enable_indexonlyscan;
+ enable_indexonlyscan 
+----------------------
+ off
+(1 row)
+
+SHOW enable_seqscan;
+ enable_seqscan 
+----------------
+ on
+(1 row)
+
+EXPLAIN ANALYZE  SELECT b FROM r WHERE c>15;
+                                                         QUERY PLAN                                                          
+-----------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on r  (cost=4474.19..24195.94 rows=401260 width=8) (actual time=43.468..299.697 rows=400000 loops=1)
+   Recheck Cond: (c > 15)
+   Heap Blocks: exact=14706
+   ->  Bitmap Index Scan on c_idx  (cost=0.00..4373.88 rows=401260 width=0) (actual time=34.081..34.082 rows=400000 loops=1)
+         Index Cond: (c > 15)
+ Planning Time: 17.898 ms
+ Execution Time: 340.658 ms
+(7 rows)
+
+ROLLBACK;
+ROLLBACK
+ relname | heap_blks_read | heap_blks_hit | seq_scan | seq_tup_read 
+---------+----------------+---------------+----------+--------------
+ r       |          14706 |             0 |        0 |            0
+(1 row)
+
+ relname | indexrelname | idx_blks_read | idx_blks_hit | idx_scan | idx_tup_read | idx_tup_fetch 
+---------+--------------+---------------+--------------+----------+--------------+---------------
+ r       | r_pkey       |             1 |            0 |        0 |            0 |             0
+ r       | b_idx        |             1 |            0 |        0 |            0 |             0
+ r       | c_idx        |           341 |            0 |        1 |       400000 |             0
+ r       | cb_idx       |             1 |            0 |        0 |            0 |             0
+(4 rows)
+

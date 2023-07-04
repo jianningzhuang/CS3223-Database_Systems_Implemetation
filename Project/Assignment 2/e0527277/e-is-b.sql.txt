@@ -1,0 +1,480 @@
+ dropdbbuffers 
+---------------
+ t
+(1 row)
+
+ pg_stat_reset 
+---------------
+ 
+(1 row)
+
+BEGIN;
+BEGIN
+SHOW enable_bitmapscan;
+ enable_bitmapscan 
+-------------------
+ on
+(1 row)
+
+SHOW enable_indexscan;
+ enable_indexscan 
+------------------
+ on
+(1 row)
+
+SHOW enable_indexonlyscan;
+ enable_indexonlyscan 
+----------------------
+ on
+(1 row)
+
+SHOW enable_seqscan;
+ enable_seqscan 
+----------------
+ on
+(1 row)
+
+SET enable_bitmapscan = OFF;
+SET
+SET enable_indexscan = ON;
+SET
+SET enable_indexonlyscan = ON;
+SET
+SET enable_seqscan = OFF;
+SET
+SHOW enable_bitmapscan;
+ enable_bitmapscan 
+-------------------
+ off
+(1 row)
+
+SHOW enable_indexscan;
+ enable_indexscan 
+------------------
+ on
+(1 row)
+
+SHOW enable_indexonlyscan;
+ enable_indexonlyscan 
+----------------------
+ on
+(1 row)
+
+SHOW enable_seqscan;
+ enable_seqscan 
+----------------
+ off
+(1 row)
+
+DROP index cb_idx;
+DROP INDEX
+EXPLAIN ANALYZE  SELECT * FROM r WHERE b=9 AND c>0;
+                                                       QUERY PLAN                                                       
+------------------------------------------------------------------------------------------------------------------------
+ Index Scan using b_idx on r  (cost=0.43..47812.57 rows=18978 width=32) (actual time=0.099..147.257 rows=18976 loops=1)
+   Index Cond: (b = 9)
+   Filter: (c > 0)
+   Rows Removed by Filter: 1024
+ Planning Time: 11.110 ms
+ Execution Time: 147.940 ms
+(6 rows)
+
+ROLLBACK;
+ROLLBACK
+ relname | heap_blks_read | heap_blks_hit | seq_scan | seq_tup_read 
+---------+----------------+---------------+----------+--------------
+ r       |          10939 |             0 |        0 |            0
+(1 row)
+
+ relname | indexrelname | idx_blks_read | idx_blks_hit | idx_scan | idx_tup_read | idx_tup_fetch 
+---------+--------------+---------------+--------------+----------+--------------+---------------
+ r       | r_pkey       |             1 |            0 |        0 |            0 |             0
+ r       | b_idx        |            21 |            0 |        1 |        20000 |         20000
+ r       | c_idx        |             1 |            0 |        0 |            0 |             0
+ r       | cb_idx       |             0 |            0 |        0 |            0 |             0
+(4 rows)
+
+ dropdbbuffers 
+---------------
+ t
+(1 row)
+
+ pg_stat_reset 
+---------------
+ 
+(1 row)
+
+BEGIN;
+BEGIN
+SHOW enable_bitmapscan;
+ enable_bitmapscan 
+-------------------
+ on
+(1 row)
+
+SHOW enable_indexscan;
+ enable_indexscan 
+------------------
+ on
+(1 row)
+
+SHOW enable_indexonlyscan;
+ enable_indexonlyscan 
+----------------------
+ on
+(1 row)
+
+SHOW enable_seqscan;
+ enable_seqscan 
+----------------
+ on
+(1 row)
+
+SET enable_bitmapscan = OFF;
+SET
+SET enable_indexscan = ON;
+SET
+SET enable_indexonlyscan = ON;
+SET
+SET enable_seqscan = OFF;
+SET
+SHOW enable_bitmapscan;
+ enable_bitmapscan 
+-------------------
+ off
+(1 row)
+
+SHOW enable_indexscan;
+ enable_indexscan 
+------------------
+ on
+(1 row)
+
+SHOW enable_indexonlyscan;
+ enable_indexonlyscan 
+----------------------
+ on
+(1 row)
+
+SHOW enable_seqscan;
+ enable_seqscan 
+----------------
+ off
+(1 row)
+
+DROP index cb_idx;
+DROP INDEX
+EXPLAIN ANALYZE  SELECT * FROM r WHERE b=9 AND c>0;
+                                                       QUERY PLAN                                                       
+------------------------------------------------------------------------------------------------------------------------
+ Index Scan using b_idx on r  (cost=0.43..47812.57 rows=18978 width=32) (actual time=0.111..152.186 rows=18976 loops=1)
+   Index Cond: (b = 9)
+   Filter: (c > 0)
+   Rows Removed by Filter: 1024
+ Planning Time: 10.880 ms
+ Execution Time: 153.039 ms
+(6 rows)
+
+ROLLBACK;
+ROLLBACK
+ relname | heap_blks_read | heap_blks_hit | seq_scan | seq_tup_read 
+---------+----------------+---------------+----------+--------------
+ r       |          10939 |             0 |        0 |            0
+(1 row)
+
+ relname | indexrelname | idx_blks_read | idx_blks_hit | idx_scan | idx_tup_read | idx_tup_fetch 
+---------+--------------+---------------+--------------+----------+--------------+---------------
+ r       | r_pkey       |             1 |            0 |        0 |            0 |             0
+ r       | b_idx        |            21 |            0 |        1 |        20000 |         20000
+ r       | c_idx        |             1 |            0 |        0 |            0 |             0
+ r       | cb_idx       |             0 |            0 |        0 |            0 |             0
+(4 rows)
+
+ dropdbbuffers 
+---------------
+ t
+(1 row)
+
+ pg_stat_reset 
+---------------
+ 
+(1 row)
+
+BEGIN;
+BEGIN
+SHOW enable_bitmapscan;
+ enable_bitmapscan 
+-------------------
+ on
+(1 row)
+
+SHOW enable_indexscan;
+ enable_indexscan 
+------------------
+ on
+(1 row)
+
+SHOW enable_indexonlyscan;
+ enable_indexonlyscan 
+----------------------
+ on
+(1 row)
+
+SHOW enable_seqscan;
+ enable_seqscan 
+----------------
+ on
+(1 row)
+
+SET enable_bitmapscan = OFF;
+SET
+SET enable_indexscan = ON;
+SET
+SET enable_indexonlyscan = ON;
+SET
+SET enable_seqscan = OFF;
+SET
+SHOW enable_bitmapscan;
+ enable_bitmapscan 
+-------------------
+ off
+(1 row)
+
+SHOW enable_indexscan;
+ enable_indexscan 
+------------------
+ on
+(1 row)
+
+SHOW enable_indexonlyscan;
+ enable_indexonlyscan 
+----------------------
+ on
+(1 row)
+
+SHOW enable_seqscan;
+ enable_seqscan 
+----------------
+ off
+(1 row)
+
+DROP index cb_idx;
+DROP INDEX
+EXPLAIN ANALYZE  SELECT * FROM r WHERE b=9 AND c>0;
+                                                      QUERY PLAN                                                       
+-----------------------------------------------------------------------------------------------------------------------
+ Index Scan using b_idx on r  (cost=0.43..47812.57 rows=18978 width=32) (actual time=0.098..98.621 rows=18976 loops=1)
+   Index Cond: (b = 9)
+   Filter: (c > 0)
+   Rows Removed by Filter: 1024
+ Planning Time: 11.908 ms
+ Execution Time: 99.321 ms
+(6 rows)
+
+ROLLBACK;
+ROLLBACK
+ relname | heap_blks_read | heap_blks_hit | seq_scan | seq_tup_read 
+---------+----------------+---------------+----------+--------------
+ r       |          10939 |             0 |        0 |            0
+(1 row)
+
+ relname | indexrelname | idx_blks_read | idx_blks_hit | idx_scan | idx_tup_read | idx_tup_fetch 
+---------+--------------+---------------+--------------+----------+--------------+---------------
+ r       | r_pkey       |             1 |            0 |        0 |            0 |             0
+ r       | b_idx        |            21 |            0 |        1 |        20000 |         20000
+ r       | c_idx        |             1 |            0 |        0 |            0 |             0
+ r       | cb_idx       |             0 |            0 |        0 |            0 |             0
+(4 rows)
+
+ dropdbbuffers 
+---------------
+ t
+(1 row)
+
+ pg_stat_reset 
+---------------
+ 
+(1 row)
+
+BEGIN;
+BEGIN
+SHOW enable_bitmapscan;
+ enable_bitmapscan 
+-------------------
+ on
+(1 row)
+
+SHOW enable_indexscan;
+ enable_indexscan 
+------------------
+ on
+(1 row)
+
+SHOW enable_indexonlyscan;
+ enable_indexonlyscan 
+----------------------
+ on
+(1 row)
+
+SHOW enable_seqscan;
+ enable_seqscan 
+----------------
+ on
+(1 row)
+
+SET enable_bitmapscan = OFF;
+SET
+SET enable_indexscan = ON;
+SET
+SET enable_indexonlyscan = ON;
+SET
+SET enable_seqscan = OFF;
+SET
+SHOW enable_bitmapscan;
+ enable_bitmapscan 
+-------------------
+ off
+(1 row)
+
+SHOW enable_indexscan;
+ enable_indexscan 
+------------------
+ on
+(1 row)
+
+SHOW enable_indexonlyscan;
+ enable_indexonlyscan 
+----------------------
+ on
+(1 row)
+
+SHOW enable_seqscan;
+ enable_seqscan 
+----------------
+ off
+(1 row)
+
+DROP index cb_idx;
+DROP INDEX
+EXPLAIN ANALYZE  SELECT * FROM r WHERE b=9 AND c>0;
+                                                       QUERY PLAN                                                       
+------------------------------------------------------------------------------------------------------------------------
+ Index Scan using b_idx on r  (cost=0.43..47812.57 rows=18978 width=32) (actual time=0.103..113.252 rows=18976 loops=1)
+   Index Cond: (b = 9)
+   Filter: (c > 0)
+   Rows Removed by Filter: 1024
+ Planning Time: 10.930 ms
+ Execution Time: 114.042 ms
+(6 rows)
+
+ROLLBACK;
+ROLLBACK
+ relname | heap_blks_read | heap_blks_hit | seq_scan | seq_tup_read 
+---------+----------------+---------------+----------+--------------
+ r       |          10939 |             0 |        0 |            0
+(1 row)
+
+ relname | indexrelname | idx_blks_read | idx_blks_hit | idx_scan | idx_tup_read | idx_tup_fetch 
+---------+--------------+---------------+--------------+----------+--------------+---------------
+ r       | r_pkey       |             1 |            0 |        0 |            0 |             0
+ r       | b_idx        |            21 |            0 |        1 |        20000 |         20000
+ r       | c_idx        |             1 |            0 |        0 |            0 |             0
+ r       | cb_idx       |             0 |            0 |        0 |            0 |             0
+(4 rows)
+
+ dropdbbuffers 
+---------------
+ t
+(1 row)
+
+ pg_stat_reset 
+---------------
+ 
+(1 row)
+
+BEGIN;
+BEGIN
+SHOW enable_bitmapscan;
+ enable_bitmapscan 
+-------------------
+ on
+(1 row)
+
+SHOW enable_indexscan;
+ enable_indexscan 
+------------------
+ on
+(1 row)
+
+SHOW enable_indexonlyscan;
+ enable_indexonlyscan 
+----------------------
+ on
+(1 row)
+
+SHOW enable_seqscan;
+ enable_seqscan 
+----------------
+ on
+(1 row)
+
+SET enable_bitmapscan = OFF;
+SET
+SET enable_indexscan = ON;
+SET
+SET enable_indexonlyscan = ON;
+SET
+SET enable_seqscan = OFF;
+SET
+SHOW enable_bitmapscan;
+ enable_bitmapscan 
+-------------------
+ off
+(1 row)
+
+SHOW enable_indexscan;
+ enable_indexscan 
+------------------
+ on
+(1 row)
+
+SHOW enable_indexonlyscan;
+ enable_indexonlyscan 
+----------------------
+ on
+(1 row)
+
+SHOW enable_seqscan;
+ enable_seqscan 
+----------------
+ off
+(1 row)
+
+DROP index cb_idx;
+DROP INDEX
+EXPLAIN ANALYZE  SELECT * FROM r WHERE b=9 AND c>0;
+                                                       QUERY PLAN                                                       
+------------------------------------------------------------------------------------------------------------------------
+ Index Scan using b_idx on r  (cost=0.43..47812.57 rows=18978 width=32) (actual time=0.096..101.898 rows=18976 loops=1)
+   Index Cond: (b = 9)
+   Filter: (c > 0)
+   Rows Removed by Filter: 1024
+ Planning Time: 13.839 ms
+ Execution Time: 102.825 ms
+(6 rows)
+
+ROLLBACK;
+ROLLBACK
+ relname | heap_blks_read | heap_blks_hit | seq_scan | seq_tup_read 
+---------+----------------+---------------+----------+--------------
+ r       |          10939 |             0 |        0 |            0
+(1 row)
+
+ relname | indexrelname | idx_blks_read | idx_blks_hit | idx_scan | idx_tup_read | idx_tup_fetch 
+---------+--------------+---------------+--------------+----------+--------------+---------------
+ r       | r_pkey       |             1 |            0 |        0 |            0 |             0
+ r       | b_idx        |            21 |            0 |        1 |        20000 |         20000
+ r       | c_idx        |             1 |            0 |        0 |            0 |             0
+ r       | cb_idx       |             0 |            0 |        0 |            0 |             0
+(4 rows)
+

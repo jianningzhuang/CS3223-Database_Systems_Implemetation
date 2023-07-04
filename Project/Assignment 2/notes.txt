@@ -1,0 +1,46 @@
+cd cs3223_assign2
+./isntall_pg.sh
+
+./setup.sh
+pg_ctl start -l ~/log.txt -o "-p 8112 -B 5000"
+export PGPORT=8112
+./createdb.sh
+./size.sh
+
+
+scp -r ~/Desktop/CS3223/cs3223_assign2 e0527277@stu.comp.nus.edu.sg:~/
+
+scp -r e0527277@stu.comp.nus.edu.sg:~/cs3223_assign2/ .
+
+./a.sh
+cat a-is-cb.sql.txt
+cat a-bis-cb.sql.txt
+
+./b.sh
+cat b-is-c.sql.txt
+cat b-bis-c.sql.txt
+cat b-ios-cb.sql.txt
+
+./c.sh
+cat c-bis-cb.sql.txt
+cat c-abis-b-c.sql.txt
+
+./d.sh
+cat d-ss.sql.txt
+cat d-is-b.sql.txt
+cat d-is-c.sql.txt
+cat d-is-cb.sql.txt
+cat d-bis-b.sql.txt
+cat d-bis-c.sql.txt
+cat d-bis-cb.sql.txt
+cat d-abis-b-c.sql.txt
+
+./e.sh
+cat e-is-b.sql.txt
+cat e-bis-cb.sql.txt
+
+b=9 c>0
+b=9 c >=0 actually better
+
+is-b reads fixed 21 b index, 20000 tuples
+bis-cb will have to read more cb index and similar numbers of tuples slower

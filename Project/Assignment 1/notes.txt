@@ -1,0 +1,877 @@
+ssh e0527277@stu.comp.nus.edu.sg
+p5hrNIpu@3223
+
+from own terminal in cs3223assign1
+scp freelist-lru.c e0527277@stu.comp.nus.edu.sg:~/cs3223_assign1
+
+
+cd cs3223_assign1
+
+source ~/.bash_profile
+pg_ctl start -l log.txt -o "-p 5181 -B 8192"
+export PGPORT=5181
+./part1.sh
+pg_ctl stop
+
+cd cs3223_assign1
+make freelist-lru.o
+make lru
+
+chmod u+x test.sh
+
+pg_ctl stop
+pg_ctl start -l log.txt -o "-p 8112 -B 16"
+export PGPORT=8112
+./test.sh
+pg_ctl stop
+
+pg_ctl start -l log.txt -o "-p 8112 -B 8192"
+export PGPORT=8112
+./part2.sh
+pg_ctl stop
+
+*check usage count
+
+
+diff testresults/result-0.txt testresults-lru-soln/result-0.txt
+diff testresults/result-1.txt testresults-lru-soln/result-1.txt
+diff testresults/result-2.txt testresults-lru-soln/result-2.txt
+diff testresults/result-3.txt testresults-lru-soln/result-3.txt
+diff testresults/result-4.txt testresults-lru-soln/result-4.txt
+diff testresults/result-5.txt testresults-lru-soln/result-5.txt
+diff testresults/result-6.txt testresults-lru-soln/result-6.txt
+diff testresults/result-7.txt testresults-lru-soln/result-7.txt
+diff testresults/result-8.txt testresults-lru-soln/result-8.txt
+diff testresults/result-9.txt testresults-lru-soln/result-9.txt
+
+from own local terminal:
+scp e0527277@stu.comp.nus.edu.sg:~/cs3223_assign1/part1_result.txt .
+scp -r e0527277@stu.comp.nus.edu.sg:~/cs3223_assign1/ .
+printf("-> %d", StrategyControl->LRUStackHead);
+
+  StrategyUpdateAccessedBuffer(10, 0);
+  StrategyUpdateAccessedBuffer(9, 0);
+  StrategyUpdateAccessedBuffer(8, 0);
+  StrategyUpdateAccessedBuffer(7, 0);
+  StrategyUpdateAccessedBuffer(6, 0);
+  StrategyUpdateAccessedBuffer(5, 0);
+  StrategyUpdateAccessedBuffer(4, 0);
+  StrategyUpdateAccessedBuffer(3, 0);
+  StrategyUpdateAccessedBuffer(2, 0);
+  StrategyUpdateAccessedBuffer(1, 0);
+  StrategyUpdateAccessedBuffer(0, 0);
+  StrategyUpdateAccessedBuffer(0, 0);
+  StrategyUpdateAccessedBuffer(2, 0);
+  StrategyUpdateAccessedBuffer(0, 0);
+  StrategyUpdateAccessedBuffer(2, 0);
+  StrategyUpdateAccessedBuffer(0, 0);
+  StrategyUpdateAccessedBuffer(2, 0);
+  StrategyUpdateAccessedBuffer(0, 0);
+  StrategyUpdateAccessedBuffer(0, 0);
+  StrategyUpdateAccessedBuffer(2, 0);
+
+/*-------------------------------------------------------------------------
+ *
+ * buf_internals.h
+ *	  Internal definitions for buffer manager and the buffer replacement
+ *	  strategy.
+ *
+ *
+ * Portions Copyright (c) 1996-2022, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1994, Regents of the University of California
+ *
+ * src/include/storage/buf_internals.h
+ *
+ *-------------------------------------------------------------------------
+ */
+#ifndef BUFMGR_INTERNALS_H
+#define BUFMGR_INTERNALS_H
+
+#include "port/atomics.h"
+#include "storage/buf.h"
+#include "storage/bufmgr.h"
+#include "storage/condition_variable.h"
+#include "storage/latch.h"
+#include "storage/lwlock.h"
+#include "storage/shmem.h"
+#include "storage/smgr.h"
+#include "storage/spin.h"
+#include "utils/relcache.h"
+
+/*
+ * Buffer state is a single 32-bit variable where following data is combined.
+ *
+ * - 18 bits refcount
+ * - 4 bits usage count
+ * - 10 bits of flags
+ *
+ * Combining these values allows to perform some operations without locking
+ * the buffer header, by modifying them together with a CAS loop.
+ *
+ * The definition of buffer state components is below.
+ */
+#define BUF_REFCOUNT_ONE 1
+#define BUF_REFCOUNT_MASK ((1U << 18) - 1)
+#define BUF_USAGECOUNT_MASK 0x003C0000U
+#define BUF_USAGECOUNT_ONE (1U << 18)
+#define BUF_USAGECOUNT_SHIFT 18
+#define BUF_FLAG_MASK 0xFFC00000U
+
+/* Get refcount and usagecount from buffer state */
+#define BUF_STATE_GET_REFCOUNT(state) ((state) & BUF_REFCOUNT_MASK)
+#define BUF_STATE_GET_USAGECOUNT(state) (((state) & BUF_USAGECOUNT_MASK) >> BUF_USAGECOUNT_SHIFT)
+
+/*
+ * Flags for buffer descriptors
+ *
+ * Note: BM_TAG_VALID essentially means that there is a buffer hashtable
+ * entry associated with the buffer's tag.
+ */
+#define BM_LOCKED				(1U << 22)	/* buffer header is locked */
+#define BM_DIRTY				(1U << 23)	/* data needs writing */
+#define BM_VALID				(1U << 24)	/* data is valid */
+#define BM_TAG_VALID			(1U << 25)	/* tag is assigned */
+#define BM_IO_IN_PROGRESS		(1U << 26)	/* read or write in progress */
+#define BM_IO_ERROR				(1U << 27)	/* previous I/O failed */
+#define BM_JUST_DIRTIED			(1U << 28)	/* dirtied since write started */
+#define BM_PIN_COUNT_WAITER		(1U << 29)	/* have waiter for sole pin */
+#define BM_CHECKPOINT_NEEDED	(1U << 30)	/* must write for checkpoint */
+#define BM_PERMANENT			(1U << 31)	/* permanent buffer (not unlogged,
+										 * or init fork) */
+/*
+ * The maximum allowed value of usage_count represents a tradeoff between
+ * accuracy and speed of the clock-sweep buffer management algorithm.  A
+ * large value (comparable to NBuffers) would approximate LRU semantics.
+ * But it can take as many as BM_MAX_USAGE_COUNT+1 complete cycles of
+ * clock sweeps to find a free buffer, so in practice we don't want the
+ * value to be very large.
+ */
+#define BM_MAX_USAGE_COUNT	5
+
+/*
+ * Buffer tag identifies which disk block the buffer contains.
+ *
+ * Note: the BufferTag data must be sufficient to determine where to write the
+ * block, without reference to pg_class or pg_tablespace entries.  It's
+ * possible that the backend flushing the buffer doesn't even believe the
+ * relation is visible yet (its xact may have started before the xact that
+ * created the rel).  The storage manager must be able to cope anyway.
+ *
+ * Note: if there's any pad bytes in the struct, INIT_BUFFERTAG will have
+ * to be fixed to zero them, since this struct is used as a hash key.
+ */
+typedef struct buftag
+{
+	RelFileNode rnode;			/* physical relation identifier */
+	ForkNumber	forkNum;
+	BlockNumber blockNum;		/* blknum relative to begin of reln */
+} BufferTag;
+
+#define CLEAR_BUFFERTAG(a) \
+( \
+	(a).rnode.spcNode = InvalidOid, \
+	(a).rnode.dbNode = InvalidOid, \
+	(a).rnode.relNode = InvalidOid, \
+	(a).forkNum = InvalidForkNumber, \
+	(a).blockNum = InvalidBlockNumber \
+)
+
+#define INIT_BUFFERTAG(a,xx_rnode,xx_forkNum,xx_blockNum) \
+( \
+	(a).rnode = (xx_rnode), \
+	(a).forkNum = (xx_forkNum), \
+	(a).blockNum = (xx_blockNum) \
+)
+
+#define BUFFERTAGS_EQUAL(a,b) \
+( \
+	RelFileNodeEquals((a).rnode, (b).rnode) && \
+	(a).blockNum == (b).blockNum && \
+	(a).forkNum == (b).forkNum \
+)
+
+/*
+ * The shared buffer mapping table is partitioned to reduce contention.
+ * To determine which partition lock a given tag requires, compute the tag's
+ * hash code with BufTableHashCode(), then apply BufMappingPartitionLock().
+ * NB: NUM_BUFFER_PARTITIONS must be a power of 2!
+ */
+#define BufTableHashPartition(hashcode) \
+	((hashcode) % NUM_BUFFER_PARTITIONS)
+#define BufMappingPartitionLock(hashcode) \
+	(&MainLWLockArray[BUFFER_MAPPING_LWLOCK_OFFSET + \
+		BufTableHashPartition(hashcode)].lock)
+#define BufMappingPartitionLockByIndex(i) \
+	(&MainLWLockArray[BUFFER_MAPPING_LWLOCK_OFFSET + (i)].lock)
+
+/*
+ *	BufferDesc -- shared descriptor/state data for a single shared buffer.
+ *
+ * Note: Buffer header lock (BM_LOCKED flag) must be held to examine or change
+ * tag, state or wait_backend_pgprocno fields.  In general, buffer header lock
+ * is a spinlock which is combined with flags, refcount and usagecount into
+ * single atomic variable.  This layout allow us to do some operations in a
+ * single atomic operation, without actually acquiring and releasing spinlock;
+ * for instance, increase or decrease refcount.  buf_id field never changes
+ * after initialization, so does not need locking.  freeNext is protected by
+ * the buffer_strategy_lock not buffer header lock.  The LWLock can take care
+ * of itself.  The buffer header lock is *not* used to control access to the
+ * data in the buffer!
+ *
+ * It's assumed that nobody changes the state field while buffer header lock
+ * is held.  Thus buffer header lock holder can do complex updates of the
+ * state variable in single write, simultaneously with lock release (cleaning
+ * BM_LOCKED flag).  On the other hand, updating of state without holding
+ * buffer header lock is restricted to CAS, which insure that BM_LOCKED flag
+ * is not set.  Atomic increment/decrement, OR/AND etc. are not allowed.
+ *
+ * An exception is that if we have the buffer pinned, its tag can't change
+ * underneath us, so we can examine the tag without locking the buffer header.
+ * Also, in places we do one-time reads of the flags without bothering to
+ * lock the buffer header; this is generally for situations where we don't
+ * expect the flag bit being tested to be changing.
+ *
+ * We can't physically remove items from a disk page if another backend has
+ * the buffer pinned.  Hence, a backend may need to wait for all other pins
+ * to go away.  This is signaled by storing its own pgprocno into
+ * wait_backend_pgprocno and setting flag bit BM_PIN_COUNT_WAITER.  At present,
+ * there can be only one such waiter per buffer.
+ *
+ * We use this same struct for local buffer headers, but the locks are not
+ * used and not all of the flag bits are useful either. To avoid unnecessary
+ * overhead, manipulations of the state field should be done without actual
+ * atomic operations (i.e. only pg_atomic_read_u32() and
+ * pg_atomic_unlocked_write_u32()).
+ *
+ * Be careful to avoid increasing the size of the struct when adding or
+ * reordering members.  Keeping it below 64 bytes (the most common CPU
+ * cache line size) is fairly important for performance.
+ *
+ * Per-buffer I/O condition variables are currently kept outside this struct in
+ * a separate array.  They could be moved in here and still fit within that
+ * limit on common systems, but for now that is not done.
+ */
+typedef struct BufferDesc
+{
+	BufferTag	tag;			/* ID of page contained in buffer */
+	int			buf_id;			/* buffer's index number (from 0) */
+
+	/* state of the tag, containing flags, refcount and usagecount */
+	pg_atomic_uint32 state;
+
+	int			wait_backend_pgprocno;	/* backend of pin-count waiter */
+	int			freeNext;		/* link in freelist chain */
+	LWLock		content_lock;	/* to lock access to buffer contents */
+} BufferDesc;
+
+/*
+ * Concurrent access to buffer headers has proven to be more efficient if
+ * they're cache line aligned. So we force the start of the BufferDescriptors
+ * array to be on a cache line boundary and force the elements to be cache
+ * line sized.
+ *
+ * XXX: As this is primarily matters in highly concurrent workloads which
+ * probably all are 64bit these days, and the space wastage would be a bit
+ * more noticeable on 32bit systems, we don't force the stride to be cache
+ * line sized on those. If somebody does actual performance testing, we can
+ * reevaluate.
+ *
+ * Note that local buffer descriptors aren't forced to be aligned - as there's
+ * no concurrent access to those it's unlikely to be beneficial.
+ *
+ * We use a 64-byte cache line size here, because that's the most common
+ * size. Making it bigger would be a waste of memory. Even if running on a
+ * platform with either 32 or 128 byte line sizes, it's good to align to
+ * boundaries and avoid false sharing.
+ */
+#define BUFFERDESC_PAD_TO_SIZE	(SIZEOF_VOID_P == 8 ? 64 : 1)
+
+typedef union BufferDescPadded
+{
+	BufferDesc	bufferdesc;
+	char		pad[BUFFERDESC_PAD_TO_SIZE];
+} BufferDescPadded;
+
+#define GetBufferDescriptor(id) (&BufferDescriptors[(id)].bufferdesc)
+#define GetLocalBufferDescriptor(id) (&LocalBufferDescriptors[(id)])
+
+#define BufferDescriptorGetBuffer(bdesc) ((bdesc)->buf_id + 1)
+
+#define BufferDescriptorGetIOCV(bdesc) \
+	(&(BufferIOCVArray[(bdesc)->buf_id]).cv)
+#define BufferDescriptorGetContentLock(bdesc) \
+	((LWLock*) (&(bdesc)->content_lock))
+
+extern PGDLLIMPORT ConditionVariableMinimallyPadded *BufferIOCVArray;
+
+/*
+ * The freeNext field is either the index of the next freelist entry,
+ * or one of these special values:
+ */
+#define FREENEXT_END_OF_LIST	(-1)
+#define FREENEXT_NOT_IN_LIST	(-2)
+
+/*
+ * Functions for acquiring/releasing a shared buffer header's spinlock.  Do
+ * not apply these to local buffers!
+ */
+extern uint32 LockBufHdr(BufferDesc *desc);
+#define UnlockBufHdr(desc, s)	\
+	do {	\
+		pg_write_barrier(); \
+		pg_atomic_write_u32(&(desc)->state, (s) & (~BM_LOCKED)); \
+	} while (0)
+
+
+/*
+ * The PendingWriteback & WritebackContext structure are used to keep
+ * information about pending flush requests to be issued to the OS.
+ */
+typedef struct PendingWriteback
+{
+	/* could store different types of pending flushes here */
+	BufferTag	tag;
+} PendingWriteback;
+
+/* struct forward declared in bufmgr.h */
+typedef struct WritebackContext
+{
+	/* pointer to the max number of writeback requests to coalesce */
+	int		   *max_pending;
+
+	/* current number of pending writeback requests */
+	int			nr_pending;
+
+	/* pending requests */
+	PendingWriteback pending_writebacks[WRITEBACK_MAX_PENDING_FLUSHES];
+} WritebackContext;
+
+/* in buf_init.c */
+extern PGDLLIMPORT BufferDescPadded *BufferDescriptors;
+extern PGDLLIMPORT WritebackContext BackendWritebackContext;
+
+/* in localbuf.c */
+extern PGDLLIMPORT BufferDesc *LocalBufferDescriptors;
+
+/* in bufmgr.c */
+
+/*
+ * Structure to sort buffers per file on checkpoints.
+ *
+ * This structure is allocated per buffer in shared memory, so it should be
+ * kept as small as possible.
+ */
+typedef struct CkptSortItem
+{
+	Oid			tsId;
+	Oid			relNode;
+	ForkNumber	forkNum;
+	BlockNumber blockNum;
+	int			buf_id;
+} CkptSortItem;
+
+extern PGDLLIMPORT CkptSortItem *CkptBufferIds;
+
+/*
+ * Internal buffer management routines
+ */
+/* bufmgr.c */
+extern void WritebackContextInit(WritebackContext *context, int *max_pending);
+extern void IssuePendingWritebacks(WritebackContext *context);
+extern void ScheduleBufferTagForWriteback(WritebackContext *context, BufferTag *tag);
+
+/* freelist.c */
+extern BufferDesc *StrategyGetBuffer(BufferAccessStrategy strategy,
+									 uint32 *buf_state);
+extern void StrategyFreeBuffer(BufferDesc *buf);
+extern bool StrategyRejectBuffer(BufferAccessStrategy strategy,
+								 BufferDesc *buf);
+
+extern int	StrategySyncStart(uint32 *complete_passes, uint32 *num_buf_alloc);
+extern void StrategyNotifyBgWriter(int bgwprocno);
+
+extern Size StrategyShmemSize(void);
+extern void StrategyInitialize(bool init);
+extern bool have_free_buffer(void);
+
+/* buf_table.c */
+extern Size BufTableShmemSize(int size);
+extern void InitBufTable(int size);
+extern uint32 BufTableHashCode(BufferTag *tagPtr);
+extern int	BufTableLookup(BufferTag *tagPtr, uint32 hashcode);
+extern int	BufTableInsert(BufferTag *tagPtr, uint32 hashcode, int buf_id);
+extern void BufTableDelete(BufferTag *tagPtr, uint32 hashcode);
+
+/* localbuf.c */
+extern PrefetchBufferResult PrefetchLocalBuffer(SMgrRelation smgr,
+										ForkNumber forkNum,
+										BlockNumber blockNum);
+extern BufferDesc *LocalBufferAlloc(SMgrRelation smgr, ForkNumber forkNum,
+									BlockNumber blockNum, bool *foundPtr);
+extern void MarkLocalBufferDirty(Buffer buffer);
+extern void DropRelFileNodeLocalBuffers(RelFileNode rnode, ForkNumber forkNum,
+										BlockNumber firstDelBlock);
+extern void DropRelFileNodeAllLocalBuffers(RelFileNode rnode);
+extern void AtEOXact_LocalBuffers(bool isCommit);
+
+#endif							/* BUFMGR_INTERNALS_H */
+
+
+
+/*-------------------------------------------------------------------------
+ *
+ * buf_init.c
+ *	  buffer manager initialization routines
+ *
+ * Portions Copyright (c) 1996-2022, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1994, Regents of the University of California
+ *
+ *
+ * IDENTIFICATION
+ *	  src/backend/storage/buffer/buf_init.c
+ *
+ *-------------------------------------------------------------------------
+ */
+#include "postgres.h"
+
+#include "storage/buf_internals.h"
+#include "storage/bufmgr.h"
+#include "storage/proc.h"
+
+BufferDescPadded *BufferDescriptors;
+char	   *BufferBlocks;
+ConditionVariableMinimallyPadded *BufferIOCVArray;
+WritebackContext BackendWritebackContext;
+CkptSortItem *CkptBufferIds;
+
+
+/*
+ * Data Structures:
+ *		buffers live in a freelist and a lookup data structure.
+ *
+ *
+ * Buffer Lookup:
+ *		Two important notes.  First, the buffer has to be
+ *		available for lookup BEFORE an IO begins.  Otherwise
+ *		a second process trying to read the buffer will
+ *		allocate its own copy and the buffer pool will
+ *		become inconsistent.
+ *
+ * Buffer Replacement:
+ *		see freelist.c.  A buffer cannot be replaced while in
+ *		use either by data manager or during IO.
+ *
+ *
+ * Synchronization/Locking:
+ *
+ * IO_IN_PROGRESS -- this is a flag in the buffer descriptor.
+ *		It must be set when an IO is initiated and cleared at
+ *		the end of the IO.  It is there to make sure that one
+ *		process doesn't start to use a buffer while another is
+ *		faulting it in.  see WaitIO and related routines.
+ *
+ * refcount --	Counts the number of processes holding pins on a buffer.
+ *		A buffer is pinned during IO and immediately after a BufferAlloc().
+ *		Pins must be released before end of transaction.  For efficiency the
+ *		shared refcount isn't increased if an individual backend pins a buffer
+ *		multiple times. Check the PrivateRefCount infrastructure in bufmgr.c.
+ */
+
+
+/*
+ * Initialize shared buffer pool
+ *
+ * This is called once during shared-memory initialization (either in the
+ * postmaster, or in a standalone backend).
+ */
+void
+InitBufferPool(void)
+{
+	bool		foundBufs,
+				foundDescs,
+				foundIOCV,
+				foundBufCkpt;
+
+	/* Align descriptors to a cacheline boundary. */
+	BufferDescriptors = (BufferDescPadded *)
+		ShmemInitStruct("Buffer Descriptors",
+						NBuffers * sizeof(BufferDescPadded),
+						&foundDescs);
+
+	BufferBlocks = (char *)
+		ShmemInitStruct("Buffer Blocks",
+						NBuffers * (Size) BLCKSZ, &foundBufs);
+
+	/* Align condition variables to cacheline boundary. */
+	BufferIOCVArray = (ConditionVariableMinimallyPadded *)
+		ShmemInitStruct("Buffer IO Condition Variables",
+						NBuffers * sizeof(ConditionVariableMinimallyPadded),
+						&foundIOCV);
+
+	/*
+	 * The array used to sort to-be-checkpointed buffer ids is located in
+	 * shared memory, to avoid having to allocate significant amounts of
+	 * memory at runtime. As that'd be in the middle of a checkpoint, or when
+	 * the checkpointer is restarted, memory allocation failures would be
+	 * painful.
+	 */
+	CkptBufferIds = (CkptSortItem *)
+		ShmemInitStruct("Checkpoint BufferIds",
+						NBuffers * sizeof(CkptSortItem), &foundBufCkpt);
+
+	if (foundDescs || foundBufs || foundIOCV || foundBufCkpt)
+	{
+		/* should find all of these, or none of them */
+		Assert(foundDescs && foundBufs && foundIOCV && foundBufCkpt);
+		/* note: this path is only taken in EXEC_BACKEND case */
+	}
+	else
+	{
+		int			i;
+
+		/*
+		 * Initialize all the buffer headers.
+		 */
+		for (i = 0; i < NBuffers; i++)
+		{
+			BufferDesc *buf = GetBufferDescriptor(i);
+
+			CLEAR_BUFFERTAG(buf->tag);
+
+			pg_atomic_init_u32(&buf->state, 0);
+			buf->wait_backend_pgprocno = INVALID_PGPROCNO;
+
+			buf->buf_id = i;
+
+			/*
+			 * Initially link all the buffers together as unused. Subsequent
+			 * management of this list is done by freelist.c.
+			 */
+			buf->freeNext = i + 1;
+
+			LWLockInitialize(BufferDescriptorGetContentLock(buf),
+							 LWTRANCHE_BUFFER_CONTENT);
+
+			ConditionVariableInit(BufferDescriptorGetIOCV(buf));
+		}
+
+		/* Correct last entry of linked list */
+		GetBufferDescriptor(NBuffers - 1)->freeNext = FREENEXT_END_OF_LIST;
+	}
+
+	/* Init other shared buffer-management stuff */
+	StrategyInitialize(!foundDescs);
+
+	/* Initialize per-backend file flush context */
+	WritebackContextInit(&BackendWritebackContext,
+						 &backend_flush_after);
+}
+
+/*
+ * BufferShmemSize
+ *
+ * compute the size of shared memory for the buffer pool including
+ * data pages, buffer descriptors, hash tables, etc.
+ */
+Size
+BufferShmemSize(void)
+{
+	Size		size = 0;
+
+	/* size of buffer descriptors */
+	size = add_size(size, mul_size(NBuffers, sizeof(BufferDescPadded)));
+	/* to allow aligning buffer descriptors */
+	size = add_size(size, PG_CACHE_LINE_SIZE);
+
+	/* size of data pages */
+	size = add_size(size, mul_size(NBuffers, BLCKSZ));
+
+	/* size of stuff controlled by freelist.c */
+	size = add_size(size, StrategyShmemSize());
+
+	/* size of I/O condition variables */
+	size = add_size(size, mul_size(NBuffers,
+								   sizeof(ConditionVariableMinimallyPadded)));
+	/* to allow aligning the above */
+	size = add_size(size, PG_CACHE_LINE_SIZE);
+
+	/* size of checkpoint sort array in bufmgr.c */
+	size = add_size(size, mul_size(NBuffers, sizeof(CkptSortItem)));
+
+	return size;
+}
+
+Notes About Shared Buffer Access Rules
+======================================
+
+There are two separate access control mechanisms for shared disk buffers:
+reference counts (a/k/a pin counts) and buffer content locks.  (Actually,
+there's a third level of access control: one must hold the appropriate kind
+of lock on a relation before one can legally access any page belonging to
+the relation.  Relation-level locks are not discussed here.)
+
+Pins: one must "hold a pin on" a buffer (increment its reference count)
+before being allowed to do anything at all with it.  An unpinned buffer is
+subject to being reclaimed and reused for a different page at any instant,
+so touching it is unsafe.  Normally a pin is acquired via ReadBuffer and
+released via ReleaseBuffer.  It is OK and indeed common for a single
+backend to pin a page more than once concurrently; the buffer manager
+handles this efficiently.  It is considered OK to hold a pin for long
+intervals --- for example, sequential scans hold a pin on the current page
+until done processing all the tuples on the page, which could be quite a
+while if the scan is the outer scan of a join.  Similarly, a btree index
+scan may hold a pin on the current index page.  This is OK because normal
+operations never wait for a page's pin count to drop to zero.  (Anything
+that might need to do such a wait is instead handled by waiting to obtain
+the relation-level lock, which is why you'd better hold one first.)  Pins
+may not be held across transaction boundaries, however.
+
+Buffer content locks: there are two kinds of buffer lock, shared and exclusive,
+which act just as you'd expect: multiple backends can hold shared locks on
+the same buffer, but an exclusive lock prevents anyone else from holding
+either shared or exclusive lock.  (These can alternatively be called READ
+and WRITE locks.)  These locks are intended to be short-term: they should not
+be held for long.  Buffer locks are acquired and released by LockBuffer().
+It will *not* work for a single backend to try to acquire multiple locks on
+the same buffer.  One must pin a buffer before trying to lock it.
+
+Buffer access rules:
+
+1. To scan a page for tuples, one must hold a pin and either shared or
+exclusive content lock.  To examine the commit status (XIDs and status bits)
+of a tuple in a shared buffer, one must likewise hold a pin and either shared
+or exclusive lock.
+
+2. Once one has determined that a tuple is interesting (visible to the
+current transaction) one may drop the content lock, yet continue to access
+the tuple's data for as long as one holds the buffer pin.  This is what is
+typically done by heap scans, since the tuple returned by heap_fetch
+contains a pointer to tuple data in the shared buffer.  Therefore the
+tuple cannot go away while the pin is held (see rule #5).  Its state could
+change, but that is assumed not to matter after the initial determination
+of visibility is made.
+
+3. To add a tuple or change the xmin/xmax fields of an existing tuple,
+one must hold a pin and an exclusive content lock on the containing buffer.
+This ensures that no one else might see a partially-updated state of the
+tuple while they are doing visibility checks.
+
+4. It is considered OK to update tuple commit status bits (ie, OR the
+values HEAP_XMIN_COMMITTED, HEAP_XMIN_INVALID, HEAP_XMAX_COMMITTED, or
+HEAP_XMAX_INVALID into t_infomask) while holding only a shared lock and
+pin on a buffer.  This is OK because another backend looking at the tuple
+at about the same time would OR the same bits into the field, so there
+is little or no risk of conflicting update; what's more, if there did
+manage to be a conflict it would merely mean that one bit-update would
+be lost and need to be done again later.  These four bits are only hints
+(they cache the results of transaction status lookups in pg_xact), so no
+great harm is done if they get reset to zero by conflicting updates.
+Note, however, that a tuple is frozen by setting both HEAP_XMIN_INVALID
+and HEAP_XMIN_COMMITTED; this is a critical update and accordingly requires
+an exclusive buffer lock (and it must also be WAL-logged).
+
+5. To physically remove a tuple or compact free space on a page, one
+must hold a pin and an exclusive lock, *and* observe while holding the
+exclusive lock that the buffer's shared reference count is one (ie,
+no other backend holds a pin).  If these conditions are met then no other
+backend can perform a page scan until the exclusive lock is dropped, and
+no other backend can be holding a reference to an existing tuple that it
+might expect to examine again.  Note that another backend might pin the
+buffer (increment the refcount) while one is performing the cleanup, but
+it won't be able to actually examine the page until it acquires shared
+or exclusive content lock.
+
+
+Obtaining the lock needed under rule #5 is done by the bufmgr routines
+LockBufferForCleanup() or ConditionalLockBufferForCleanup().  They first get
+an exclusive lock and then check to see if the shared pin count is currently
+1.  If not, ConditionalLockBufferForCleanup() releases the exclusive lock and
+then returns false, while LockBufferForCleanup() releases the exclusive lock
+(but not the caller's pin) and waits until signaled by another backend,
+whereupon it tries again.  The signal will occur when UnpinBuffer decrements
+the shared pin count to 1.  As indicated above, this operation might have to
+wait a good while before it acquires the lock, but that shouldn't matter much
+for concurrent VACUUM.  The current implementation only supports a single
+waiter for pin-count-1 on any particular shared buffer.  This is enough for
+VACUUM's use, since we don't allow multiple VACUUMs concurrently on a single
+relation anyway.  Anyone wishing to obtain a cleanup lock outside of recovery
+or a VACUUM must use the conditional variant of the function.
+
+
+Buffer Manager's Internal Locking
+---------------------------------
+
+Before PostgreSQL 8.1, all operations of the shared buffer manager itself
+were protected by a single system-wide lock, the BufMgrLock, which
+unsurprisingly proved to be a source of contention.  The new locking scheme
+avoids grabbing system-wide exclusive locks in common code paths.  It works
+like this:
+
+* There is a system-wide LWLock, the BufMappingLock, that notionally
+protects the mapping from buffer tags (page identifiers) to buffers.
+(Physically, it can be thought of as protecting the hash table maintained
+by buf_table.c.)  To look up whether a buffer exists for a tag, it is
+sufficient to obtain share lock on the BufMappingLock.  Note that one
+must pin the found buffer, if any, before releasing the BufMappingLock.
+To alter the page assignment of any buffer, one must hold exclusive lock
+on the BufMappingLock.  This lock must be held across adjusting the buffer's
+header fields and changing the buf_table hash table.  The only common
+operation that needs exclusive lock is reading in a page that was not
+in shared buffers already, which will require at least a kernel call
+and usually a wait for I/O, so it will be slow anyway.
+
+* As of PG 8.2, the BufMappingLock has been split into NUM_BUFFER_PARTITIONS
+separate locks, each guarding a portion of the buffer tag space.  This allows
+further reduction of contention in the normal code paths.  The partition
+that a particular buffer tag belongs to is determined from the low-order
+bits of the tag's hash value.  The rules stated above apply to each partition
+independently.  If it is necessary to lock more than one partition at a time,
+they must be locked in partition-number order to avoid risk of deadlock.
+
+* A separate system-wide spinlock, buffer_strategy_lock, provides mutual
+exclusion for operations that access the buffer free list or select
+buffers for replacement.  A spinlock is used here rather than a lightweight
+lock for efficiency; no other locks of any sort should be acquired while
+buffer_strategy_lock is held.  This is essential to allow buffer replacement
+to happen in multiple backends with reasonable concurrency.
+
+* Each buffer header contains a spinlock that must be taken when examining
+or changing fields of that buffer header.  This allows operations such as
+ReleaseBuffer to make local state changes without taking any system-wide
+lock.  We use a spinlock, not an LWLock, since there are no cases where
+the lock needs to be held for more than a few instructions.
+
+Note that a buffer header's spinlock does not control access to the data
+held within the buffer.  Each buffer header also contains an LWLock, the
+"buffer content lock", that *does* represent the right to access the data
+in the buffer.  It is used per the rules above.
+
+* The BM_IO_IN_PROGRESS flag acts as a kind of lock, used to wait for I/O on a
+buffer to complete (and in releases before 14, it was accompanied by a
+per-buffer LWLock).  The process doing a read or write sets the flag for the
+duration, and processes that need to wait for it to be cleared sleep on a
+condition variable.
+
+
+Normal Buffer Replacement Strategy
+----------------------------------
+
+There is a "free list" of buffers that are prime candidates for replacement.
+In particular, buffers that are completely free (contain no valid page) are
+always in this list.  We could also throw buffers into this list if we
+consider their pages unlikely to be needed soon; however, the current
+algorithm never does that.  The list is singly-linked using fields in the
+buffer headers; we maintain head and tail pointers in global variables.
+(Note: although the list links are in the buffer headers, they are
+considered to be protected by the buffer_strategy_lock, not the buffer-header
+spinlocks.)  To choose a victim buffer to recycle when there are no free
+buffers available, we use a simple clock-sweep algorithm, which avoids the
+need to take system-wide locks during common operations.  It works like
+this:
+
+Each buffer header contains a usage counter, which is incremented (up to a
+small limit value) whenever the buffer is pinned.  (This requires only the
+buffer header spinlock, which would have to be taken anyway to increment the
+buffer reference count, so it's nearly free.)
+
+The "clock hand" is a buffer index, nextVictimBuffer, that moves circularly
+through all the available buffers.  nextVictimBuffer is protected by the
+buffer_strategy_lock.
+
+The algorithm for a process that needs to obtain a victim buffer is:
+
+1. Obtain buffer_strategy_lock.
+
+2. If buffer free list is nonempty, remove its head buffer.  Release
+buffer_strategy_lock.  If the buffer is pinned or has a nonzero usage count,
+it cannot be used; ignore it go back to step 1.  Otherwise, pin the buffer,
+and return it.
+
+3. Otherwise, the buffer free list is empty.  Select the buffer pointed to by
+nextVictimBuffer, and circularly advance nextVictimBuffer for next time.
+Release buffer_strategy_lock.
+
+4. If the selected buffer is pinned or has a nonzero usage count, it cannot
+be used.  Decrement its usage count (if nonzero), reacquire
+buffer_strategy_lock, and return to step 3 to examine the next buffer.
+
+5. Pin the selected buffer, and return.
+
+(Note that if the selected buffer is dirty, we will have to write it out
+before we can recycle it; if someone else pins the buffer meanwhile we will
+have to give up and try another buffer.  This however is not a concern
+of the basic select-a-victim-buffer algorithm.)
+
+
+Buffer Ring Replacement Strategy
+---------------------------------
+
+When running a query that needs to access a large number of pages just once,
+such as VACUUM or a large sequential scan, a different strategy is used.
+A page that has been touched only by such a scan is unlikely to be needed
+again soon, so instead of running the normal clock sweep algorithm and
+blowing out the entire buffer cache, a small ring of buffers is allocated
+using the normal clock sweep algorithm and those buffers are reused for the
+whole scan.  This also implies that much of the write traffic caused by such
+a statement will be done by the backend itself and not pushed off onto other
+processes.
+
+For sequential scans, a 256KB ring is used. That's small enough to fit in L2
+cache, which makes transferring pages from OS cache to shared buffer cache
+efficient.  Even less would often be enough, but the ring must be big enough
+to accommodate all pages in the scan that are pinned concurrently.  256KB
+should also be enough to leave a small cache trail for other backends to
+join in a synchronized seq scan.  If a ring buffer is dirtied and its LSN
+updated, we would normally have to write and flush WAL before we could
+re-use the buffer; in this case we instead discard the buffer from the ring
+and (later) choose a replacement using the normal clock-sweep algorithm.
+Hence this strategy works best for scans that are read-only (or at worst
+update hint bits).  In a scan that modifies every page in the scan, like a
+bulk UPDATE or DELETE, the buffers in the ring will always be dirtied and
+the ring strategy effectively degrades to the normal strategy.
+
+VACUUM uses a 256KB ring like sequential scans, but dirty pages are not
+removed from the ring.  Instead, WAL is flushed if needed to allow reuse of
+the buffers.  Before introducing the buffer ring strategy in 8.3, VACUUM's
+buffers were sent to the freelist, which was effectively a buffer ring of 1
+buffer, resulting in excessive WAL flushing.  Allowing VACUUM to update
+256KB between WAL flushes should be more efficient.
+
+Bulk writes work similarly to VACUUM.  Currently this applies only to
+COPY IN and CREATE TABLE AS SELECT.  (Might it be interesting to make
+seqscan UPDATE and DELETE use the bulkwrite strategy?)  For bulk writes
+we use a ring size of 16MB (but not more than 1/8th of shared_buffers).
+Smaller sizes have been shown to result in the COPY blocking too often
+for WAL flushes.  While it's okay for a background vacuum to be slowed by
+doing its own WAL flushing, we'd prefer that COPY not be subject to that,
+so we let it use up a bit more of the buffer arena.
+
+
+Background Writer's Processing
+------------------------------
+
+The background writer is designed to write out pages that are likely to be
+recycled soon, thereby offloading the writing work from active backends.
+To do this, it scans forward circularly from the current position of
+nextVictimBuffer (which it does not change!), looking for buffers that are
+dirty and not pinned nor marked with a positive usage count.  It pins,
+writes, and releases any such buffer.
+
+If we can assume that reading nextVictimBuffer is an atomic action, then
+the writer doesn't even need to take buffer_strategy_lock in order to look
+for buffers to write; it needs only to spinlock each buffer header for long
+enough to check the dirtybit.  Even without that assumption, the writer
+only needs to take the lock long enough to read the variable value, not
+while scanning the buffers.  (This is a very substantial improvement in
+the contention cost of the writer compared to PG 8.0.)
+
+The background writer takes shared content lock on a buffer while writing it
+out (and anyone else who flushes buffer contents to disk must do so too).
+This ensures that the page image transferred to disk is reasonably consistent.
+We might miss a hint-bit update or two but that isn't a problem, for the same
+reasons mentioned under buffer access rules.
+
+As of 8.4, background writer starts during recovery mode when there is
+some form of potentially extended recovery to perform. It performs an
+identical service to normal processing, except that checkpoints it
+writes are technically restartpoints.
